@@ -1,0 +1,59 @@
+### A/B Testing Demo Code ###
+
+n_exp=10000
+n_con=10000
+
+#generate click data
+click_exp= pd.Series(np.random.binomial(1,0.5,n_exp))
+click_con= pd.Series(np.random.binomial(1,0.2,n_con))
+
+#generate group identifiere
+exp_id=pd.Series(np.repeat('exp',n_exp))
+con_id=pd.Series(np.repeat('con',n_con))
+
+df_exp=pd.concat([click_exp,exp_id],axis=1)
+df_con=pd.concat([click_con,con_id],axis=1)
+
+df_exp.columns=['click','group']
+df_con.columns=['click','group']
+
+print(df_exp)
+print(df_con)
+
+df_ab_test=pd.concat([df_exp,df_con],axis=0).reset_index(drop=True)
+print(df_ab_test)
+
+#calculating number of clicks in each group
+x_con= df_ab_test.groupby('group')['click'].sum().loc['con']
+x_exp= df_ab_test.groupby('group')['click'].sum().loc['exp']
+print(x_con)
+print(x_exp)
+
+p_con_hat = x_con/n_con
+p_exp_hat = x_exp/n_exp
+
+print(p_con_hat)
+print(p_exp_hat)
+
+p_pooled_hat= (x_con+x_exp)/(n_con+n_exp)
+print(p_pooled_hat)
+
+pooled_variance= p_pooled_hat*(1-p_pooled_hat)*(1/n_con+1/n_exp)
+print(pooled_variance)
+se= np.sqrt(pooled_variance)
+print(se)
+
+t_stat= (p_exp_hat-p_con_hat)/se
+print('Test statictics---',t_stat)
+
+alpha=0.05
+
+z_cri = norm.ppf(1-alpha/2)
+print('Critical value---',z_cri)
+
+
+p_value = 2*norm.sf(np.abs(t_stat))
+print('p-value---',p_value)
+
+CI = (round(p_exp_hat-p_con_hat-z_cri*se),round(p_exp_hat-p_con_hat+z_cri*se))
+print('Confidence Interval---',CI)
